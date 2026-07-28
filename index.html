@@ -127,6 +127,8 @@
       <div style="flex:1"></div>
       <button class="primary" id="exportOldBtn" disabled>Export 4+ years old (CSV)</button>
       <span id="exportCount"></span>
+      <button class="primary" id="exportLaptopsOldBtn" disabled>Export laptops 4+ years (CSV)</button>
+      <span id="laptopsOldCount"></span>
       <button class="primary" id="exportDupesBtn" disabled>Export duplicate users (CSV)</button>
       <span id="dupesCount"></span>
     </div>
@@ -291,6 +293,11 @@ function downloadCSV(lines, filenamePrefix) {
   URL.revokeObjectURL(url);
 }
 
+// Device name prefix convention: JSPFLP = laptop, JSPFPC = desktop/PC.
+function isLaptop(row) {
+  return (row['Device name'] || '').trim().toUpperCase().startsWith('JSPFLP');
+}
+
 function exportOldDevices() {
   const oldRows = allRows.filter(r => r['4+ Years Old'] === 'Yes');
   if (oldRows.length === 0) {
@@ -300,6 +307,17 @@ function exportOldDevices() {
   const lines = [EXPORT_COLS.map(csvEscape).join(',')];
   oldRows.forEach(r => lines.push(EXPORT_COLS.map(c => csvEscape(r[c])).join(',')));
   downloadCSV(lines, 'devices_4plus_years');
+}
+
+function exportOldLaptops() {
+  const oldLaptops = allRows.filter(r => r['4+ Years Old'] === 'Yes' && isLaptop(r));
+  if (oldLaptops.length === 0) {
+    alert('No laptops (device names starting with JSPFLP) are currently flagged as 4+ years old.');
+    return;
+  }
+  const lines = [EXPORT_COLS.map(csvEscape).join(',')];
+  oldLaptops.forEach(r => lines.push(EXPORT_COLS.map(c => csvEscape(r[c])).join(',')));
+  downloadCSV(lines, 'laptops_4plus_years');
 }
 
 // Groups devices by Primary user display name, keeping only names that show
@@ -334,6 +352,7 @@ function exportDuplicateUsers() {
 }
 
 document.getElementById('exportOldBtn').addEventListener('click', exportOldDevices);
+document.getElementById('exportLaptopsOldBtn').addEventListener('click', exportOldLaptops);
 document.getElementById('exportDupesBtn').addEventListener('click', exportDuplicateUsers);
 
 fetch('data/results.json?_=' + Date.now())
@@ -348,6 +367,10 @@ fetch('data/results.json?_=' + Date.now())
     const oldCount = allRows.filter(r => r['4+ Years Old'] === 'Yes').length;
     document.getElementById('exportCount').textContent = `${oldCount} device${oldCount === 1 ? '' : 's'} qualify`;
     document.getElementById('exportOldBtn').disabled = false;
+
+    const oldLaptopCount = allRows.filter(r => r['4+ Years Old'] === 'Yes' && isLaptop(r)).length;
+    document.getElementById('laptopsOldCount').textContent = `${oldLaptopCount} laptop${oldLaptopCount === 1 ? '' : 's'} qualify`;
+    document.getElementById('exportLaptopsOldBtn').disabled = false;
 
     const dupeGroups = getDuplicateUserGroups();
     const dupeDeviceCount = dupeGroups.reduce((sum, g) => sum + g.rows.length, 0);
