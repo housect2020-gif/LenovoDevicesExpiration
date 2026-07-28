@@ -141,13 +141,22 @@
 <footer>Data refreshed via GitHub Actions · direct to Lenovo, no browser proxy involved</footer>
 
 <script>
-const COLS = [
+// Full set — always included in the CSV export, regardless of what's shown on screen.
+const EXPORT_COLS = [
   'Device name', 'Enrollment date', 'Last check-in', 'OS version', 'Azure AD registered',
   'Serial number', 'Manufacturer', 'Model', 'Primary user email address',
   'Primary user display name', 'Device state', 'Intune registered', 'SkuFamily',
   'ProcessorArchitecture', 'Warranty Status', 'Warranty Start', 'Warranty End',
   'Age (years)', '4+ Years Old'
 ];
+
+// Columns hidden from the on-screen table to keep it readable — still in the CSV export above.
+const HIDDEN_ON_SCREEN = [
+  'OS version', 'Azure AD registered', 'Manufacturer', 'Device state',
+  'Intune registered', 'SkuFamily', 'ProcessorArchitecture'
+];
+
+const DISPLAY_COLS = EXPORT_COLS.filter(c => !HIDDEN_ON_SCREEN.includes(c));
 
 let allRows = [];
 let sortState = { col: null, dir: 1 };
@@ -205,7 +214,7 @@ function sortByColumn(col) {
 function renderHeader() {
   const theadRow = document.getElementById('theadRow');
   theadRow.innerHTML = '';
-  COLS.forEach(h => {
+  DISPLAY_COLS.forEach(h => {
     const th = document.createElement('th');
     th.textContent = h;
     const arrow = document.createElement('span');
@@ -224,7 +233,7 @@ function renderHeader() {
 
 function appendRow(tbody, row) {
   const tr = document.createElement('tr');
-  COLS.forEach(h => {
+  DISPLAY_COLS.forEach(h => {
     const td = document.createElement('td');
     if (h === 'Warranty Status') {
       if (row['Warranty Status']) {
@@ -255,7 +264,7 @@ function renderTable(filterText) {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   const rows = filterText
-    ? allRows.filter(r => COLS.some(c => String(r[c] || '').toLowerCase().includes(filterText)))
+    ? allRows.filter(r => EXPORT_COLS.some(c => String(r[c] || '').toLowerCase().includes(filterText)))
     : allRows;
   rows.forEach(r => appendRow(tbody, r));
 }
@@ -274,8 +283,8 @@ function exportOldDevices() {
     alert('No devices are currently flagged as 4+ years old.');
     return;
   }
-  const lines = [COLS.map(csvEscape).join(',')];
-  oldRows.forEach(r => lines.push(COLS.map(c => csvEscape(r[c])).join(',')));
+  const lines = [EXPORT_COLS.map(csvEscape).join(',')];
+  oldRows.forEach(r => lines.push(EXPORT_COLS.map(c => csvEscape(r[c])).join(',')));
   const csv = lines.join('\r\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
