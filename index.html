@@ -142,6 +142,12 @@
   </div>
 
   <div class="panel" id="resultsPanel" style="display:none;">
+    <div class="row" style="margin-bottom:.9rem;">
+      <label style="display:flex; align-items:center; gap:.5rem; font-size:.84rem; color:var(--dim); cursor:pointer;">
+        <input type="checkbox" id="showAllCols">
+        Show all original columns (default shows a focused subset — the full CSV download always has everything)
+      </label>
+    </div>
     <div class="tablewrap">
       <table>
         <thead><tr id="theadRow"></tr></thead>
@@ -149,6 +155,7 @@
       </table>
     </div>
   </div>
+
 
 </main>
 
@@ -170,8 +177,20 @@ const delayInput  = document.getElementById('delayMs');
 let parsedRows = [];
 let originalHeaders = [];
 let resultRows = []; // final rows including new columns, for CSV export
+let focusedOriginalCols = []; // subset of originalHeaders shown by default
 
 const EXTRA_COLS = ['Warranty Status', 'Warranty Start', 'Warranty End', 'Age (years)', '4+ Years Old'];
+const FOCUS_CANDIDATES = ['device name', 'serial number', 'manufacturer', 'model'];
+const showAllColsInput = document.getElementById('showAllCols');
+
+function rerenderTable() {
+  const cols = showAllColsInput.checked ? originalHeaders : focusedOriginalCols;
+  renderHeader(cols);
+  tbody.innerHTML = '';
+  resultRows.forEach(row => appendRow(row, cols));
+}
+
+showAllColsInput.addEventListener('change', rerenderTable);
 
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
@@ -183,6 +202,10 @@ fileInput.addEventListener('change', () => {
     complete: (res) => {
       parsedRows = res.data;
       originalHeaders = res.meta.fields || [];
+      focusedOriginalCols = FOCUS_CANDIDATES
+        .map(c => findColumn(originalHeaders, c))
+        .filter(Boolean);
+      if (focusedOriginalCols.length === 0) focusedOriginalCols = originalHeaders.slice(0, 4);
       statusEl.textContent = `Loaded ${parsedRows.length} rows. Click "Run warranty check" to begin.`;
       runBtn.disabled = parsedRows.length === 0;
       downloadBtn.disabled = true;
@@ -313,12 +336,14 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   fileInput.disabled = true;
   downloadBtn.disabled = true;
+  showAllColsInput.disabled = true;
   resultsPanel.style.display = 'block';
   tbody.innerHTML = '';
   resultRows = [];
 
-  const headers = originalHeaders;
-  renderHeader(headers);
+  const headers = originalHeaders; // full set — used for lookups & CSV export
+  const visibleCols = showAllColsInput.checked ? originalHeaders : focusedOriginalCols;
+  renderHeader(visibleCols);
 
   const serialCol = findColumn(headers, 'serial number', 'serial');
   const mfgCol     = findColumn(headers, 'manufacturer');
@@ -371,13 +396,14 @@ runBtn.addEventListener('click', async () => {
     }
 
     resultRows.push(outRow);
-    appendRow(outRow, headers);
+    appendRow(outRow, visibleCols);
   }
 
   statusEl.textContent = `Done. Processed ${total} rows.`;
   runBtn.disabled = false;
   fileInput.disabled = false;
   downloadBtn.disabled = false;
+  showAllColsInput.disabled = false;
 });
 
 downloadBtn.addEventListener('click', () => {
