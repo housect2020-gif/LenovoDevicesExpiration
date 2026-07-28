@@ -6,12 +6,10 @@
 <title>Fleet Warranty Check</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root{
-    --navy:#003D7C;       /* primary institutional blue */
-    --navy-dark:#00265099;
-    --blue:#0072BC;       /* UN-style accent blue for links/actions */
+    --navy:#003D7C;
+    --blue:#0072BC;
     --bg:#F4F6F9;
     --panel:#FFFFFF;
     --line:#D8DEE4;
@@ -23,71 +21,41 @@
     --sans: "Source Sans 3", "Open Sans", "Segoe UI", Arial, sans-serif;
   }
   *{box-sizing:border-box}
-  body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:var(--sans); line-height:1.5;
-  }
-  header{
-    background:var(--navy); color:#fff;
-    padding:1.8rem 2rem;
-    border-bottom:4px solid var(--blue);
-  }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; }
+  header{ background:var(--navy); color:#fff; padding:1.8rem 2rem; border-bottom:4px solid var(--blue); }
   header .inner{ max-width:1200px; margin:0 auto; }
-  .eyebrow{
-    font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
-    color:#BFD9F0; margin-bottom:.4rem; font-weight:600;
-  }
+  .eyebrow{ font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:#BFD9F0; margin-bottom:.4rem; font-weight:600; }
   h1{ margin:0 0 .35rem; font-size:1.55rem; font-weight:700; letter-spacing:-.01em; }
   header p{ margin:0; color:#DCE9F6; font-size:.92rem; max-width:70ch; }
 
   main{ max-width:1200px; margin:0 auto; padding:1.8rem 2rem 4rem; }
 
-  .panel{
-    background:var(--panel); border:1px solid var(--line); border-radius:6px;
-    padding:1.3rem 1.4rem; margin-bottom:1.4rem;
-    box-shadow:0 1px 2px rgba(20,40,70,.05);
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:1.3rem 1.4rem; margin-bottom:1.4rem; box-shadow:0 1px 2px rgba(20,40,70,.05); }
+
+  .stats{ display:flex; gap:1.2rem; flex-wrap:wrap; }
+  .stat{ flex:1; min-width:150px; }
+  .stat .num{ font-size:1.6rem; font-weight:700; color:var(--navy); }
+  .stat .label{ font-size:.78rem; color:var(--dim); }
+  .stat.warn .num{ color:var(--amber); }
+  .stat.bad .num{ color:var(--red); }
+
+  #meta{ font-size:.82rem; color:var(--dim); margin-top:.8rem; }
+
+  details{ margin-top:1rem; }
+  summary{ cursor:pointer; font-size:.85rem; font-weight:600; color:var(--blue); }
+  .howto{ font-size:.84rem; color:var(--dim); line-height:1.7; margin-top:.7rem; }
+  .howto ol{ margin:.3rem 0 0; padding-left:1.3rem; }
+  .howto code{ background:#eef1f4; padding:.05rem .35rem; border-radius:3px; color:var(--text); }
+
+  input#filterBox{
+    padding:.55rem .8rem; border:1px solid var(--line); border-radius:4px;
+    font-family:var(--sans); font-size:.85rem; width:280px;
   }
-
-  .row{ display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
-
-  label.upload{
-    display:inline-flex; align-items:center; gap:.55rem;
-    background:var(--navy); color:#fff; font-weight:600;
-    padding:.6rem 1.05rem; border-radius:4px; cursor:pointer;
-    font-size:.86rem; user-select:none; transition:background .15s;
-  }
-  label.upload:hover{ background:#00509e; }
-  input[type=file]{ display:none; }
-
-  button{
-    font-family:var(--sans); font-size:.85rem; font-weight:600;
-    padding:.58rem 1rem; border-radius:4px; cursor:pointer;
-    border:1px solid var(--line); background:#fff; color:var(--navy);
-    transition:background .15s, border-color .15s;
-  }
-  button:hover:not(:disabled){ background:#eef3f9; border-color:var(--blue); }
-  button:disabled{ opacity:.45; cursor:not-allowed; }
-  button.primary{ background:var(--blue); color:#fff; border:1px solid var(--blue); }
-  button.primary:hover:not(:disabled){ background:#005c99; }
-
-  #fileName{ color:var(--dim); font-size:.85rem; }
-
-  .field{ display:flex; flex-direction:column; gap:.3rem; }
-  .field label{ font-size:.74rem; color:var(--dim); font-weight:600; }
-  .field input[type=number]{
-    background:#fff; border:1px solid var(--line); color:var(--text);
-    border-radius:4px; padding:.4rem .55rem; width:5rem;
-  }
-
-  #status{ font-size:.85rem; color:var(--dim); margin-top:.9rem; }
-  #bar{ height:6px; background:#e3e9ef; border-radius:99px; overflow:hidden; margin-top:.5rem; display:none; }
-  #bar > div{ height:100%; width:0%; background:var(--blue); transition:width .2s; }
 
   table{ width:100%; border-collapse:collapse; font-size:.84rem; }
   thead th{
-    text-align:left; font-size:.72rem; letter-spacing:.03em;
-    text-transform:uppercase; color:#fff; padding:.65rem .75rem;
-    background:var(--navy); position:sticky; top:0;
+    text-align:left; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
+    color:#fff; padding:.65rem .75rem; background:var(--navy); position:sticky; top:0;
     cursor:pointer; user-select:none; white-space:nowrap;
   }
   thead th:hover{ background:#00509e; }
@@ -98,10 +66,7 @@
   tbody tr:hover{ background:#EEF3F9; }
   .tablewrap{ overflow:auto; max-height:65vh; border:1px solid var(--line); border-radius:6px; }
 
-  .badge{
-    display:inline-block; padding:.16rem .55rem; border-radius:99px;
-    font-size:.72rem; font-weight:700; letter-spacing:.02em;
-  }
+  .badge{ display:inline-block; padding:.16rem .55rem; border-radius:99px; font-size:.72rem; font-weight:700; letter-spacing:.02em; }
   .b-green{ background:#E6F4EA; color:var(--green); }
   .b-amber{ background:#FCF1DF; color:var(--amber); }
   .b-red{ background:#FBEAE8; color:var(--red); }
@@ -109,54 +74,43 @@
 
   footer{ text-align:center; color:var(--dim); font-size:.8rem; padding:2rem; }
   a{ color:var(--blue); }
-  .note{ font-size:.8rem; color:var(--dim); margin-top:.9rem; line-height:1.55; }
-  .note b{ color:var(--text); }
-  .note code{ background:#eef1f4; padding:.05rem .3rem; border-radius:3px; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="inner">
-    <div class="eyebrow">Asset inventory · client-side</div>
+    <div class="eyebrow">Asset inventory · auto-updated</div>
     <h1>Fleet Warranty Check</h1>
-    <p>Upload your device export. For every Lenovo serial number, this page looks up warranty status directly from Lenovo's public support site and flags anything 4+ years old — all in your browser.</p>
+    <p>Lenovo warranty status and device age, refreshed automatically whenever a new inventory export is uploaded to the repository.</p>
   </div>
 </header>
 
 <main>
 
   <div class="panel">
-    <div class="row">
-      <label class="upload">
-        Choose CSV file
-        <input type="file" id="fileInput" accept=".csv">
-      </label>
-      <span id="fileName">No file selected</span>
-      <div style="flex:1"></div>
-      <div class="field">
-        <label for="delayMs">Delay between requests (ms)</label>
-        <input type="number" id="delayMs" value="1200" min="0" step="100">
+    <div class="stats" id="stats"></div>
+    <div id="meta"></div>
+
+    <details>
+      <summary>How to refresh this report with a new inventory file</summary>
+      <div class="howto">
+        <ol>
+          <li>Export the latest device inventory as a CSV (same columns as before).</li>
+          <li>Go to this repository on GitHub, open the <code>data</code> folder, and click <b>Add file → Upload files</b>.</li>
+          <li>Upload the new file and rename it exactly <code>inventory.csv</code>, replacing the existing one.</li>
+          <li>Click <b>Commit changes</b>.</li>
+          <li>That's it — this automatically starts the update in the background. It typically takes 45–70 minutes for ~350 devices. You can watch progress under the repository's <b>Actions</b> tab.</li>
+          <li>Once it finishes, just refresh this page to see the new results.</li>
+        </ol>
       </div>
-      <button class="primary" id="runBtn" disabled>Run warranty check</button>
-      <button id="downloadBtn" disabled>Download results CSV</button>
-    </div>
-    <div id="status"></div>
-    <div id="bar"><div id="barFill"></div></div>
-    <div class="note">
-      <b>How it works:</b> for each row, we call the same public endpoints
-      <code>pcsupport.lenovo.com</code> itself uses when you type a serial into its
-      warranty lookup box. This is unofficial (not Lenovo's partner API), so results
-      can occasionally fail or the site can rate-limit fast repeated requests —
-      that's what the delay setting is for. Non-Lenovo rows (VMs, etc.) are skipped automatically.
-      <br><b>"4+ years old"</b> is calculated from the warranty start date Lenovo returns
-      (a reliable stand-in for ship/purchase date). If that's unavailable, we fall back to the
-      <code>Enrollment date</code> column.
-      <br><b>Click any column header to sort</b> — click again to reverse the order.
-    </div>
+    </details>
   </div>
 
-  <div class="panel" id="resultsPanel" style="display:none;">
+  <div class="panel">
+    <div class="row" style="margin-bottom:.9rem;">
+      <input type="text" id="filterBox" placeholder="Filter by name, serial, user, model...">
+    </div>
     <div class="tablewrap">
       <table>
         <thead><tr id="theadRow"></tr></thead>
@@ -167,225 +121,87 @@
 
 </main>
 
-<footer>Runs entirely client-side · nothing is stored or logged anywhere</footer>
+<footer>Data refreshed via GitHub Actions · direct to Lenovo, no browser proxy involved</footer>
 
 <script>
-const fileInput   = document.getElementById('fileInput');
-const fileNameEl  = document.getElementById('fileName');
-const runBtn      = document.getElementById('runBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const statusEl    = document.getElementById('status');
-const barWrap     = document.getElementById('bar');
-const barFill     = document.getElementById('barFill');
-const resultsPanel= document.getElementById('resultsPanel');
-const theadRow    = document.getElementById('theadRow');
-const tbody       = document.getElementById('tbody');
-const delayInput  = document.getElementById('delayMs');
+const COLS = [
+  'Device name', 'Enrollment date', 'Last check-in', 'OS version', 'Azure AD registered',
+  'Serial number', 'Manufacturer', 'Model', 'Primary user email address',
+  'Primary user display name', 'Device state', 'Intune registered', 'SkuFamily',
+  'ProcessorArchitecture', 'Warranty Status', 'Warranty Start', 'Warranty End',
+  'Age (years)', 'Age Basis', '4+ Years Old'
+];
 
-let parsedRows = [];
-let originalHeaders = [];
-let resultRows = [];     // full rows including new columns — used for CSV export
-let displayCols = [];    // the exact columns to show, resolved from the file's real headers
-let running = false;
+let allRows = [];
 let sortState = { col: null, dir: 1 };
 
-const EXTRA_COLS = ['Warranty Status', 'Warranty Start', 'Warranty End', 'Age (years)', '4+ Years Old'];
+function badge(text, cls) { return `<span class="badge ${cls}">${text}</span>`; }
 
-// The columns you asked to see, in order. Matched case-insensitively against
-// whatever headers are actually in the uploaded file.
-const WANTED_COLS = [
-  'Device name', 'Enrollment date', 'Last check-in', 'OS version',
-  'Azure AD registered', 'Serial number', 'Manufacturer', 'Model',
-  'Primary user email address', 'Primary user display name',
-  'Device state', 'Intune registered', 'SkuFamily', 'ProcessorArchitecture'
-];
-
-fileInput.addEventListener('change', () => {
-  const file = fileInput.files[0];
-  if (!file) return;
-  fileNameEl.textContent = file.name;
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    complete: (res) => {
-      parsedRows = res.data;
-      originalHeaders = res.meta.fields || [];
-      displayCols = WANTED_COLS
-        .map(c => findColumn(originalHeaders, c))
-        .filter(Boolean);
-      statusEl.textContent = `Loaded ${parsedRows.length} rows. Click "Run warranty check" to begin.`;
-      runBtn.disabled = parsedRows.length === 0;
-      downloadBtn.disabled = true;
-      resultsPanel.style.display = 'none';
-      sortState = { col: null, dir: 1 };
-    },
-    error: (err) => {
-      statusEl.textContent = 'Could not parse that file: ' + err.message;
-    }
-  });
-});
-
-function findColumn(headers, ...candidates) {
-  const lower = headers.map(h => h.toLowerCase());
-  for (const c of candidates) {
-    const idx = lower.indexOf(c.toLowerCase());
-    if (idx !== -1) return headers[idx];
-  }
-  for (const c of candidates) {
-    const idx = lower.findIndex(h => h.includes(c.toLowerCase()));
-    if (idx !== -1) return headers[idx];
-  }
-  return null;
+function statBlock(num, label, cls) {
+  return `<div class="stat ${cls||''}"><div class="num">${num}</div><div class="label">${label}</div></div>`;
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function renderStats(data) {
+  const oldCount = data.rows.filter(r => r['4+ Years Old'] === 'Yes').length;
+  const failCount = data.rows.filter(r => r['Note']).length;
+  document.getElementById('stats').innerHTML =
+    statBlock(data.lenovo_devices, 'Lenovo devices') +
+    statBlock(oldCount, '4+ years old', oldCount > 0 ? 'warn' : '') +
+    statBlock(failCount, 'lookups failed', failCount > 0 ? 'bad' : '') +
+    statBlock(data.total_rows, 'total inventory rows');
 
-// A short chain of ways to reach pcsupport.lenovo.com from a browser on another
-// domain. Direct almost always fails (no CORS headers on their side), so we fall
-// through a couple of public read-only CORS proxies. Each is tried with a couple
-// of retries, since free proxies are occasionally flaky or briefly rate-limited.
-const PROXY_BUILDERS = [
-  (url) => url, // direct — works if Lenovo ever allows CORS, or if you're using a browser extension that adds it
-  (url) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-  (url) => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
-];
-const ATTEMPTS_PER_PROXY = 2;
-const RETRY_BACKOFF_MS = 500;
-
-async function fetchRaw(url) {
-  let lastErr = new Error('no proxy attempted');
-  for (const build of PROXY_BUILDERS) {
-    for (let i = 0; i < ATTEMPTS_PER_PROXY; i++) {
-      try {
-        const r = await fetch(build(url), { headers: { 'Accept': 'application/json,text/html' } });
-        if (!r.ok) { lastErr = new Error('HTTP ' + r.status); await sleep(RETRY_BACKOFF_MS); continue; }
-        return await r.text();
-      } catch (e) {
-        lastErr = e;
-        await sleep(RETRY_BACKOFF_MS);
-      }
-    }
-  }
-  throw lastErr;
+  const generated = new Date(data.generated_at);
+  document.getElementById('meta').textContent =
+    `Last updated: ${generated.toLocaleString()}`;
 }
-
-// Step 1 must return valid JSON. If a proxy or Lenovo itself hands back an HTML
-// error/rate-limit page instead (the "Unexpected token '<'" symptom), that's not
-// a real result — retry it through the remaining proxies rather than failing.
-async function fetchJSON(url) {
-  let lastErr = new Error('no proxy attempted');
-  for (const build of PROXY_BUILDERS) {
-    for (let i = 0; i < ATTEMPTS_PER_PROXY; i++) {
-      try {
-        const r = await fetch(build(url), { headers: { 'Accept': 'application/json' } });
-        if (!r.ok) { lastErr = new Error('HTTP ' + r.status); await sleep(RETRY_BACKOFF_MS); continue; }
-        const text = await r.text();
-        return JSON.parse(text); // throws if we got an HTML block/error page instead
-      } catch (e) {
-        lastErr = e;
-        await sleep(RETRY_BACKOFF_MS);
-      }
-    }
-  }
-  throw lastErr;
-}
-
-async function lookupWarranty(serial) {
-  const out = { status: '', start: '', end: '', model: '', error: '' };
-  try {
-    const data = await fetchJSON(
-      `https://pcsupport.lenovo.com/us/en/api/v4/mse/getproducts?productId=${encodeURIComponent(serial)}`
-    );
-    if (!Array.isArray(data) || data.length === 0 || !data[0].id) {
-      out.error = 'no product match';
-      return out;
-    }
-    const productId = data[0].id;
-
-    const step2 = await fetchRaw(
-      `https://pcsupport.lenovo.com/us/en/products/${productId}/warranty`
-    );
-    const grab = (pattern) => {
-      const m = step2.match(pattern);
-      return m ? m[1].trim() : '';
-    };
-    out.model  = grab(/"Name":"(.*?)"/);
-    out.status = grab(/"StatusV2":"(.*?)"/) || grab(/"warrantystatus":"(.*?)"/);
-    out.start  = grab(/"Start":"(.*?)"/);
-    out.end    = grab(/"End":"(.*?)"/);
-    if (!out.end) out.error = 'fetched page but no end date found';
-  } catch (e) {
-    out.error = e.message || 'request failed';
-  }
-  return out;
-}
-
-function yearsBetween(dateStr) {
-  const d = new Date(dateStr);
-  if (isNaN(d)) return null;
-  const now = new Date();
-  return (now - d) / (1000 * 60 * 60 * 24 * 365.25);
-}
-
-function badge(text, cls) {
-  return `<span class="badge ${cls}">${text}</span>`;
-}
-
-// --- sorting -----------------------------------------------------------
 
 function cellSortValue(row, col) {
   const raw = row[col];
   if (raw === undefined || raw === null || raw === '') return { t: 'empty', v: '' };
-  const num = Number(raw);
-  if (raw.trim && /^-?\d+(\.\d+)?$/.test(raw.trim())) return { t: 'num', v: num };
+  if (/^-?\d+(\.\d+)?$/.test(String(raw).trim())) return { t: 'num', v: Number(raw) };
   const d = new Date(raw);
   if (!isNaN(d) && /\d{4}/.test(raw)) return { t: 'date', v: d.getTime() };
   return { t: 'str', v: String(raw).toLowerCase() };
 }
 
 function sortByColumn(col) {
-  if (running) return;
   if (sortState.col === col) sortState.dir *= -1;
   else sortState = { col, dir: 1 };
-
-  resultRows.sort((a, b) => {
+  allRows.sort((a, b) => {
     const av = cellSortValue(a, col), bv = cellSortValue(b, col);
     if (av.t === 'empty' && bv.t === 'empty') return 0;
-    if (av.t === 'empty') return 1;   // empties always sink to the bottom
+    if (av.t === 'empty') return 1;
     if (bv.t === 'empty') return -1;
     if (av.v < bv.v) return -1 * sortState.dir;
     if (av.v > bv.v) return 1 * sortState.dir;
     return 0;
   });
-
-  renderTable();
+  renderTable(currentFilter());
 }
 
-function renderHeader(cols) {
+function renderHeader() {
+  const theadRow = document.getElementById('theadRow');
   theadRow.innerHTML = '';
-  cols.forEach(h => {
+  COLS.forEach(h => {
     const th = document.createElement('th');
     th.textContent = h;
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow';
     if (sortState.col === h) {
       th.classList.add('sorted');
-      const arrow = document.createElement('span');
-      arrow.className = 'arrow';
       arrow.textContent = sortState.dir === 1 ? '▲' : '▼';
-      th.appendChild(arrow);
     } else {
-      const arrow = document.createElement('span');
-      arrow.className = 'arrow';
       arrow.textContent = '↕';
-      th.appendChild(arrow);
     }
+    th.appendChild(arrow);
     th.addEventListener('click', () => sortByColumn(h));
     theadRow.appendChild(th);
   });
 }
 
-function appendRow(row, cols) {
+function appendRow(tbody, row) {
   const tr = document.createElement('tr');
-  cols.forEach(h => {
+  COLS.forEach(h => {
     const td = document.createElement('td');
     if (h === 'Warranty Status') {
       if (row['Warranty Status']) {
@@ -393,7 +209,7 @@ function appendRow(row, cols) {
                   : /active|in warranty/i.test(row['Warranty Status']) ? 'b-green' : 'b-dim';
         td.innerHTML = badge(row['Warranty Status'], cls);
       } else {
-        td.innerHTML = badge(row['_note'] || '—', 'b-dim');
+        td.innerHTML = badge(row['Note'] || '—', 'b-dim');
       }
     } else if (h === '4+ Years Old') {
       if (row['4+ Years Old'] === 'Yes') td.innerHTML = badge('Yes', 'b-amber');
@@ -407,110 +223,37 @@ function appendRow(row, cols) {
   tbody.appendChild(tr);
 }
 
-function renderTable() {
-  const cols = [...displayCols, ...EXTRA_COLS];
-  renderHeader(cols);
-  tbody.innerHTML = '';
-  resultRows.forEach(row => appendRow(row, cols));
+function currentFilter() {
+  return document.getElementById('filterBox').value.trim().toLowerCase();
 }
 
-// --- run -----------------------------------------------------------------
-
-runBtn.addEventListener('click', async () => {
-  if (!parsedRows.length) return;
-  running = true;
-  runBtn.disabled = true;
-  fileInput.disabled = true;
-  downloadBtn.disabled = true;
-  resultsPanel.style.display = 'block';
+function renderTable(filterText) {
+  renderHeader();
+  const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
-  resultRows = [];
-  sortState = { col: null, dir: 1 };
+  const rows = filterText
+    ? allRows.filter(r => COLS.some(c => String(r[c] || '').toLowerCase().includes(filterText)))
+    : allRows;
+  rows.forEach(r => appendRow(tbody, r));
+}
 
-  const cols = [...displayCols, ...EXTRA_COLS];
-  renderHeader(cols);
+document.getElementById('filterBox').addEventListener('input', () => renderTable(currentFilter()));
 
-  const serialCol = findColumn(originalHeaders, 'serial number', 'serial');
-  const mfgCol     = findColumn(originalHeaders, 'manufacturer');
-  const enrollCol  = findColumn(originalHeaders, 'enrollment date', 'enrolled');
-
-  if (!serialCol) {
-    statusEl.textContent = 'Could not find a "Serial number" column in this file.';
-    running = false;
-    runBtn.disabled = false;
-    fileInput.disabled = false;
-    return;
-  }
-
-  const delay = Math.max(0, parseInt(delayInput.value, 10) || 0);
-  barWrap.style.display = 'block';
-
-  let done = 0;
-  const total = parsedRows.length;
-
-  for (const row of parsedRows) {
-    done++;
-    const pct = Math.round((done / total) * 100);
-    barFill.style.width = pct + '%';
-    statusEl.textContent = `Processing ${done} / ${total}: ${row[serialCol] || '(blank serial)'} ...`;
-
-    const isLenovo = !mfgCol || /lenovo/i.test(row[mfgCol] || '');
-    const serial = (row[serialCol] || '').trim();
-
-    if (!isLenovo) {
-      continue; // not a Lenovo device — leave it out of the results entirely
-    }
-
-    const outRow = { ...row };
-
-    if (!serial) {
-      outRow['_note'] = 'no serial';
-      outRow['Warranty Status'] = '';
-      outRow['Warranty Start'] = '';
-      outRow['Warranty End'] = '';
-      outRow['Age (years)'] = '';
-      outRow['4+ Years Old'] = '';
-    } else {
-      const w = await lookupWarranty(serial);
-      outRow['Warranty Status'] = w.status || (w.error ? '' : 'unknown');
-      outRow['_note'] = w.error || '';
-      outRow['Warranty Start'] = w.start || '';
-      outRow['Warranty End'] = w.end || '';
-
-      let anchorDate = w.start || (enrollCol ? row[enrollCol] : '');
-      const yrs = anchorDate ? yearsBetween(anchorDate) : null;
-      outRow['Age (years)'] = yrs !== null ? yrs.toFixed(1) : '';
-      outRow['4+ Years Old'] = yrs !== null ? (yrs >= 4 ? 'Yes' : 'No') : '';
-
-      await sleep(delay);
-    }
-
-    resultRows.push(outRow);
-    appendRow(outRow, cols);
-  }
-
-  statusEl.textContent = `Done. Processed ${total} rows. Click any column header to sort.`;
-  running = false;
-  runBtn.disabled = false;
-  fileInput.disabled = false;
-  downloadBtn.disabled = false;
-});
-
-downloadBtn.addEventListener('click', () => {
-  const headers = [...originalHeaders, ...EXTRA_COLS];
-  const csv = Papa.unparse(resultRows.map(r => {
-    const o = {};
-    headers.forEach(h => o[h] = r[h] ?? '');
-    return o;
-  }), { columns: headers });
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'devices_with_warranty.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-});
+fetch('data/results.json?_=' + Date.now())
+  .then(r => {
+    if (!r.ok) throw new Error('results.json not found yet');
+    return r.json();
+  })
+  .then(data => {
+    allRows = data.rows;
+    renderStats(data);
+    renderTable('');
+  })
+  .catch(err => {
+    document.getElementById('stats').innerHTML =
+      `<div class="stat bad"><div class="num">—</div><div class="label">No results yet — run the workflow first (see instructions above)</div></div>`;
+    console.error(err);
+  });
 </script>
 
 </body>
