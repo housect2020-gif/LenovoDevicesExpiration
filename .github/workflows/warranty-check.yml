@@ -1,0 +1,44 @@
+name: Lenovo Warranty Check
+
+# Runs automatically whenever data/inventory.csv is updated (e.g. service desk
+# uploads a new export), and can also be triggered manually from the Actions tab.
+on:
+  push:
+    paths:
+      - "data/inventory.csv"
+  workflow_dispatch: {}
+
+# Needed so this workflow can commit the results file back to the repo.
+permissions:
+  contents: write
+
+jobs:
+  run-warranty-check:
+    runs-on: ubuntu-latest
+    # Generous ceiling — a full run of ~350 devices typically takes 45-70
+    # minutes with the batching/pausing built into the script.
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run warranty lookup
+        run: python scripts/warranty_lookup.py
+
+      - name: Commit updated results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/results.json
+          git diff --cached --quiet && echo "No changes to commit." && exit 0
+          git commit -m "Update warranty results [skip ci]"
+          git push
