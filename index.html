@@ -168,8 +168,14 @@ function renderStats(data) {
     statBlock(data.total_rows, 'total inventory rows');
 
   const generated = new Date(data.generated_at);
-  document.getElementById('meta').textContent =
-    `Last updated: ${generated.toLocaleString()}`;
+  let metaText = `Last updated: ${generated.toLocaleString()}`;
+
+  if (data.run_complete === false) {
+    const done = data.processed_so_far ?? data.rows.length;
+    metaText = `⏳ Run in progress — ${done} of ${data.lenovo_devices} devices processed so far `
+      + `(as of ${generated.toLocaleString()}). Refresh in a bit for more.`;
+  }
+  document.getElementById('meta').textContent = metaText;
 }
 
 function cellSortValue(row, col) {
