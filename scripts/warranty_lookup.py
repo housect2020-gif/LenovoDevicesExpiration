@@ -21,6 +21,7 @@ import csv
 import json
 import random
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -30,11 +31,17 @@ import requests
 
 # ---------------------------------------------------------------------------
 # Config — tune these if you ever need to
+#
+# These were loosened from the original (25/batch, 2.5-3.7min pauses,
+# 1.0-2.2s per request) after a full 358-device run at that pace succeeded
+# with zero failures. This faster pace is an *educated bet*, not a proven
+# safe rate — if failures start reappearing ("no product match" / HTTP 403
+# clustering together), that's the signal to loosen these again.
 # ---------------------------------------------------------------------------
 
-BATCH_SIZE = 25                # devices per batch (= up to 50 HTTP requests)
-BATCH_PAUSE_RANGE = (150, 220)  # seconds to pause between batches (2.5–3.7 min)
-REQUEST_DELAY_RANGE = (1.0, 2.2)  # seconds between individual requests, jittered
+BATCH_SIZE = 20                 # devices per batch (= up to 40 HTTP requests)
+BATCH_PAUSE_RANGE = (60, 100)   # seconds to pause between batches (1–1.7 min)
+REQUEST_DELAY_RANGE = (0.6, 1.3)  # seconds between individual requests, jittered
 MAX_ATTEMPTS = 3               # retries per request before giving up
 RETRY_BACKOFF_BASE = 3         # seconds; grows with each retry attempt
 
@@ -154,6 +161,60 @@ def years_between(date_str: str):
     return (now - d).days / 365.25
 
 
+def write_output(rows, total_rows, lenovo_total, failures, complete):
+    output = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "total_rows": total_rows,
+        "lenovo_devices": lenovo_total,
+        "processed_so_far": len(rows),
+        "run_complete": complete,
+        "failed_lookups": failures,
+        "rows": rows,
+    }
+    OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
+    with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2)
+
+
+def run_git(*args):
+    return subprocess.run(["git", *args], capture_output=True, text=True)
+
+
+def git_commit_and_push(message):
+    """Commit data/results.json and push, rebasing onto the latest main first
+    so a long-running job can never collide with someone editing other files
+    (like index.html) while it's still going. Safe to call repeatedly —
+    does nothing if there's nothing new to commit."""
+    run_git("config", "user.name", "github-actions[bot]")
+    run_git("config", "user.email", "github-actions[bot]@users.noreply.github.com")
+    run_git("add", "data/results.json")
+
+    diff = run_git("diff", "--cached", "--quiet")
+    if diff.returncode == 0:
+        return  # nothing changed since the last commit
+
+    commit = run_git("commit", "-m", message)
+    if commit.returncode != 0:
+        print(f"  [git] commit failed: {commit.stderr.strip()}")
+        return
+
+    for attempt in range(1, 4):
+        run_git("fetch", "origin", "main")
+        rebase = run_git("rebase", "origin/main")
+        if rebase.returncode != 0:
+            print(f"  [git] rebase failed: {rebase.stderr.strip()}")
+            run_git("rebase", "--abort")
+            return
+        push = run_git("push")
+        if push.returncode == 0:
+            print("  [git] pushed updated results.")
+            return
+        print(f"  [git] push attempt {attempt} failed, retrying: {push.stderr.strip()}")
+        time.sleep(5)
+    print("  [git] giving up on push after 3 attempts — progress is committed locally "
+          "but not pushed; the final commit at the end of the run will retry.")
+
+
 def main():
     if not INPUT_CSV.exists():
         print(f"No {INPUT_CSV} found — nothing to do.")
@@ -230,22 +291,20 @@ def main():
 
             jitter_sleep(*REQUEST_DELAY_RANGE)
 
+        # Save and push progress after every batch — so a mid-run failure
+        # (or a manual edit landing on main while this is running) only
+        # ever costs you the current batch, never the whole run.
+        write_output(results, len(rows), total, failures, complete=False)
+        batch_num = batch_start // BATCH_SIZE + 1
+        git_commit_and_push(f"Update warranty results (batch {batch_num}) [skip ci]")
+
         if batch_start + BATCH_SIZE < total:
             pause = random.uniform(*BATCH_PAUSE_RANGE)
             print(f"  Pausing {pause:.0f}s before next batch...")
             time.sleep(pause)
 
-    output = {
-        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "total_rows": len(rows),
-        "lenovo_devices": total,
-        "failed_lookups": failures,
-        "rows": results,
-    }
-
-    OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
-        json.dump(output, f, indent=2)
+    write_output(results, len(rows), total, failures, complete=True)
+    git_commit_and_push("Update warranty results (final) [skip ci]")
 
     print(f"\nDone. {total - failures}/{total} succeeded. Wrote {OUTPUT_JSON}.")
 
