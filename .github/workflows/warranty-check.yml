@@ -41,4 +41,20 @@ jobs:
           git add data/results.json
           git diff --cached --quiet && echo "No changes to commit." && exit 0
           git commit -m "Update warranty results [skip ci]"
-          git push
+
+          # The lookup can take over an hour. If anyone edits other files in
+          # the repo (like index.html) while it's running, main will have
+          # moved on by the time we're ready to push our results — rebase
+          # onto the latest main first so that doesn't cause a rejected push.
+          git fetch origin main
+          git rebase origin/main
+
+          # Retry the push a few times in case of a last-second race with
+          # another push (rare, but cheap to guard against).
+          for i in 1 2 3; do
+            git push && break
+            echo "Push failed, retrying after re-fetch (attempt $i)..."
+            git fetch origin main
+            git rebase origin/main
+            sleep 5
+          done
