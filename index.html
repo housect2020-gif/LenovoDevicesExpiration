@@ -23,12 +23,12 @@
   *{box-sizing:border-box}
   body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; }
   header{ background:var(--navy); color:#fff; padding:1.8rem 2rem; border-bottom:4px solid var(--blue); }
-  header .inner{ max-width:1200px; margin:0 auto; }
+  header .inner{ max-width:1800px; margin:0 auto; }
   .eyebrow{ font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:#BFD9F0; margin-bottom:.4rem; font-weight:600; }
   h1{ margin:0 0 .35rem; font-size:1.55rem; font-weight:700; letter-spacing:-.01em; }
   header p{ margin:0; color:#DCE9F6; font-size:.92rem; max-width:70ch; }
 
-  main{ max-width:1200px; margin:0 auto; padding:1.8rem 2rem 4rem; }
+  main{ max-width:1800px; margin:0 auto; padding:1.8rem 2rem 4rem; }
 
   .panel{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:1.3rem 1.4rem; margin-bottom:1.4rem; box-shadow:0 1px 2px rgba(20,40,70,.05); }
 
@@ -66,16 +66,16 @@
   button.primary:hover:not(:disabled){ background:#005c99; }
   #exportCount{ font-size:.8rem; color:var(--dim); }
 
-  table{ width:100%; border-collapse:collapse; font-size:.84rem; }
+  table{ width:100%; border-collapse:collapse; font-size:.79rem; }
   thead th{
-    text-align:left; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
-    color:#fff; padding:.65rem .75rem; background:var(--navy); position:sticky; top:0;
+    text-align:left; font-size:.68rem; letter-spacing:.02em; text-transform:uppercase;
+    color:#fff; padding:.55rem .55rem; background:var(--navy); position:sticky; top:0;
     cursor:pointer; user-select:none; white-space:nowrap;
   }
   thead th:hover{ background:#00509e; }
   thead th .arrow{ opacity:.55; margin-left:.3rem; font-size:.7em; }
   thead th.sorted .arrow{ opacity:1; }
-  tbody td{ padding:.55rem .75rem; border-bottom:1px solid #e7ebf0; }
+  tbody td{ padding:.5rem .55rem; border-bottom:1px solid #e7ebf0; white-space:nowrap; }
   tbody tr:nth-child(even){ background:#F9FBFD; }
   tbody tr:hover{ background:#EEF3F9; }
   .tablewrap{ overflow:auto; max-height:65vh; border:1px solid var(--line); border-radius:6px; }
@@ -146,7 +146,7 @@ const COLS = [
   'Serial number', 'Manufacturer', 'Model', 'Primary user email address',
   'Primary user display name', 'Device state', 'Intune registered', 'SkuFamily',
   'ProcessorArchitecture', 'Warranty Status', 'Warranty Start', 'Warranty End',
-  'Age (years)', 'Age Basis', '4+ Years Old'
+  'Age (years)', '4+ Years Old'
 ];
 
 let allRows = [];
