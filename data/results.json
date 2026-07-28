@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-07-28T17:08:18+00:00",
+  "generated_at": "2026-07-28T17:08:21+00:00",
   "total_rows": 425,
   "lenovo_devices": 358,
   "processed_so_far": 358,
-  "run_complete": false,
+  "run_complete": true,
   "failed_lookups": 0,
   "rows": [
     {
