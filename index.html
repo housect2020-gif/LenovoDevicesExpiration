@@ -127,6 +127,8 @@
       <div style="flex:1"></div>
       <button class="primary" id="exportOldBtn" disabled>Export 4+ years old (CSV)</button>
       <span id="exportCount"></span>
+      <button class="primary" id="exportDupesBtn" disabled>Export duplicate users (CSV)</button>
+      <span id="dupesCount"></span>
     </div>
     <div class="tablewrap">
       <table>
@@ -277,6 +279,18 @@ function csvEscape(val) {
   return s;
 }
 
+function downloadCSV(lines, filenamePrefix) {
+  const csv = lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `${filenamePrefix}_${stamp}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function exportOldDevices() {
   const oldRows = allRows.filter(r => r['4+ Years Old'] === 'Yes');
   if (oldRows.length === 0) {
@@ -285,19 +299,42 @@ function exportOldDevices() {
   }
   const lines = [EXPORT_COLS.map(csvEscape).join(',')];
   oldRows.forEach(r => lines.push(EXPORT_COLS.map(c => csvEscape(r[c])).join(',')));
-  const csv = lines.join('\r\n');
+  downloadCSV(lines, 'devices_4plus_years');
+}
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const stamp = new Date().toISOString().slice(0, 10);
-  a.href = url;
-  a.download = `devices_4plus_years_${stamp}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+// Groups devices by Primary user display name, keeping only names that show
+// up on more than one device. Blank/missing names are excluded — those
+// aren't "duplicates" in any meaningful sense, just missing data.
+function getDuplicateUserGroups() {
+  const groups = {};
+  allRows.forEach(r => {
+    const name = (r['Primary user display name'] || '').trim();
+    if (!name) return;
+    if (!groups[name]) groups[name] = [];
+    groups[name].push(r);
+  });
+  return Object.keys(groups)
+    .filter(name => groups[name].length > 1)
+    .sort((a, b) => a.localeCompare(b))
+    .map(name => ({ name, rows: groups[name] }));
+}
+
+function exportDuplicateUsers() {
+  const dupeGroups = getDuplicateUserGroups();
+  if (dupeGroups.length === 0) {
+    alert('No duplicate primary users found — everyone currently has at most one device.');
+    return;
+  }
+  const lines = [EXPORT_COLS.map(csvEscape).join(',')];
+  dupeGroups.forEach((group, i) => {
+    if (i > 0) lines.push(''); // blank row between each person's group of devices
+    group.rows.forEach(r => lines.push(EXPORT_COLS.map(c => csvEscape(r[c])).join(',')));
+  });
+  downloadCSV(lines, 'duplicate_primary_users');
 }
 
 document.getElementById('exportOldBtn').addEventListener('click', exportOldDevices);
+document.getElementById('exportDupesBtn').addEventListener('click', exportDuplicateUsers);
 
 fetch('data/results.json?_=' + Date.now())
   .then(r => {
@@ -311,6 +348,13 @@ fetch('data/results.json?_=' + Date.now())
     const oldCount = allRows.filter(r => r['4+ Years Old'] === 'Yes').length;
     document.getElementById('exportCount').textContent = `${oldCount} device${oldCount === 1 ? '' : 's'} qualify`;
     document.getElementById('exportOldBtn').disabled = false;
+
+    const dupeGroups = getDuplicateUserGroups();
+    const dupeDeviceCount = dupeGroups.reduce((sum, g) => sum + g.rows.length, 0);
+    document.getElementById('dupesCount').textContent =
+      dupeGroups.length === 0 ? 'none found'
+        : `${dupeGroups.length} user${dupeGroups.length === 1 ? '' : 's'} · ${dupeDeviceCount} devices`;
+    document.getElementById('exportDupesBtn').disabled = false;
   })
   .catch(err => {
     document.getElementById('stats').innerHTML =
