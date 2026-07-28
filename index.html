@@ -52,6 +52,20 @@
     font-family:var(--sans); font-size:.85rem; width:280px;
   }
 
+  .row{ display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; }
+
+  button{
+    font-family:var(--sans); font-size:.85rem; font-weight:600;
+    padding:.58rem 1rem; border-radius:4px; cursor:pointer;
+    border:1px solid var(--line); background:#fff; color:var(--navy);
+    transition:background .15s, border-color .15s;
+  }
+  button:hover:not(:disabled){ background:#eef3f9; border-color:var(--blue); }
+  button:disabled{ opacity:.45; cursor:not-allowed; }
+  button.primary{ background:var(--blue); color:#fff; border:1px solid var(--blue); }
+  button.primary:hover:not(:disabled){ background:#005c99; }
+  #exportCount{ font-size:.8rem; color:var(--dim); }
+
   table{ width:100%; border-collapse:collapse; font-size:.84rem; }
   thead th{
     text-align:left; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
@@ -110,6 +124,9 @@
   <div class="panel">
     <div class="row" style="margin-bottom:.9rem;">
       <input type="text" id="filterBox" placeholder="Filter by name, serial, user, model...">
+      <div style="flex:1"></div>
+      <button class="primary" id="exportOldBtn" disabled>Export 4+ years old (CSV)</button>
+      <span id="exportCount"></span>
     </div>
     <div class="tablewrap">
       <table>
@@ -239,6 +256,34 @@ function renderTable(filterText) {
 
 document.getElementById('filterBox').addEventListener('input', () => renderTable(currentFilter()));
 
+function csvEscape(val) {
+  const s = String(val ?? '');
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function exportOldDevices() {
+  const oldRows = allRows.filter(r => r['4+ Years Old'] === 'Yes');
+  if (oldRows.length === 0) {
+    alert('No devices are currently flagged as 4+ years old.');
+    return;
+  }
+  const lines = [COLS.map(csvEscape).join(',')];
+  oldRows.forEach(r => lines.push(COLS.map(c => csvEscape(r[c])).join(',')));
+  const csv = lines.join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `devices_4plus_years_${stamp}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('exportOldBtn').addEventListener('click', exportOldDevices);
+
 fetch('data/results.json?_=' + Date.now())
   .then(r => {
     if (!r.ok) throw new Error('results.json not found yet');
@@ -248,6 +293,9 @@ fetch('data/results.json?_=' + Date.now())
     allRows = data.rows;
     renderStats(data);
     renderTable('');
+    const oldCount = allRows.filter(r => r['4+ Years Old'] === 'Yes').length;
+    document.getElementById('exportCount').textContent = `${oldCount} device${oldCount === 1 ? '' : 's'} qualify`;
+    document.getElementById('exportOldBtn').disabled = false;
   })
   .catch(err => {
     document.getElementById('stats').innerHTML =
