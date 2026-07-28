@@ -59,6 +59,13 @@ HEADERS = {
 session = requests.Session()
 session.headers.update(HEADERS)
 
+# --- temporary debugging ---------------------------------------------------
+# Prints the raw response for the first few "no product id" cases so we can
+# see exactly what Lenovo is sending back. Safe to remove once diagnosed.
+_debug_printed = 0
+DEBUG_SAMPLE_LIMIT = 3
+# ----------------------------------------------------------------------------
+
 
 def jitter_sleep(lo, hi):
     time.sleep(random.uniform(lo, hi))
@@ -92,6 +99,7 @@ def request_with_retries(method, url, **kwargs):
 
 
 def lookup_warranty(serial: str) -> dict:
+    global _debug_printed
     out = {"status": "", "start": "", "end": "", "model": "", "note": ""}
 
     try:
@@ -106,11 +114,19 @@ def lookup_warranty(serial: str) -> dict:
         return out
 
     if not data:
+        if _debug_printed < DEBUG_SAMPLE_LIMIT:
+            print(f"    [debug] empty response for {serial}. Status={r.status_code} "
+                  f"Body={r.text[:500]!r}")
+            _debug_printed += 1
         out["note"] = "no product match"
         return out
 
     product_id = data[0].get("id", "")
     if not product_id:
+        if _debug_printed < DEBUG_SAMPLE_LIMIT:
+            print(f"    [debug] no 'id' field for {serial}. Status={r.status_code} "
+                  f"Raw data[0]={json.dumps(data[0])[:800]}")
+            _debug_printed += 1
         out["note"] = "no product id returned"
         return out
 
