@@ -171,12 +171,21 @@ function statBlock(num, label, cls) {
   return `<div class="stat ${cls||''}"><div class="num">${num}</div><div class="label">${label}</div></div>`;
 }
 
+function ageInYears(row) {
+  const v = parseFloat(row['Age (years)']);
+  return isNaN(v) ? null : v;
+}
+
 function renderStats(data) {
   const oldCount = data.rows.filter(r => r['4+ Years Old'] === 'Yes').length;
   const failCount = data.rows.filter(r => r['Note']).length;
+  const laptop4Count = data.rows.filter(r => isLaptop(r) && ageInYears(r) !== null && ageInYears(r) >= 4).length;
+  const laptop5Count = data.rows.filter(r => isLaptop(r) && ageInYears(r) !== null && ageInYears(r) >= 5).length;
   document.getElementById('stats').innerHTML =
     statBlock(data.lenovo_devices, 'Lenovo devices') +
     statBlock(oldCount, '4+ years old', oldCount > 0 ? 'warn' : '') +
+    statBlock(laptop4Count, 'laptops 4+ years old', laptop4Count > 0 ? 'warn' : '') +
+    statBlock(laptop5Count, 'laptops 5+ years old', laptop5Count > 0 ? 'bad' : '') +
     statBlock(failCount, 'lookups failed', failCount > 0 ? 'bad' : '') +
     statBlock(data.total_rows, 'total inventory rows');
 
